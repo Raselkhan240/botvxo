@@ -1,5 +1,3 @@
-Here is the complete, full code for your local bot (bot.py) with the fixed proxy normalization logic and proper API parameter mapping (card, url, proxy) matching your Railway backend:
-```python
 from telethon import TelegramClient, events, Button
 import asyncio
 import aiohttp
@@ -491,5 +489,3 @@ async def chk_cmd(event):
 
 print("✅ Bot started successfully!")
 bot.run_until_disconnected()
-
-```
