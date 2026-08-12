@@ -54,9 +54,11 @@ API_ID = 21124241
 API_HASH = 'b7ddce3d3683f54be788fddae73fa468'
 BOT_TOKEN = '8872654381:AAF8rRvAvid-JtbU7AbpU8g4acECXfIfRh0'
 
-PREMIUM_FILE = r'C:\Users\Sabbir\Desktop\SHOPI BOT\SHOPI BOT\premium.txt'
-SITES_FILE = r'C:\Users\Sabbir\Desktop\SHOPI BOT\SHOPI BOT\sites.txt'
-PROXY_FILE = r'C:\Users\Sabbir\Desktop\SHOPI BOT\SHOPI BOT\proxy.txt'
+# Automatically resolve paths relative to the script's directory on Railway/VPS
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PREMIUM_FILE = os.path.join(BASE_DIR, 'premium.txt')
+SITES_FILE = os.path.join(BASE_DIR, 'sites.txt')
+PROXY_FILE = os.path.join(BASE_DIR, 'proxy.txt')
 
 bot = TelegramClient('checker_bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 active_sessions = {}
@@ -84,6 +86,7 @@ _DEAD_INDICATORS = (
 
 def get_file_lines(filepath):
     if not os.path.exists(filepath):
+        print(f"[Warning] File not found: {filepath}")
         return []
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
@@ -93,7 +96,8 @@ def get_file_lines(filepath):
         return []
 
 def load_premium_users():
-    return get_file_lines(PREMIUM_FILE)
+    users = get_file_lines(PREMIUM_FILE)
+    return users
 
 def load_sites():
     return get_file_lines(SITES_FILE)
@@ -102,7 +106,8 @@ def load_proxies():
     return get_file_lines(PROXY_FILE)
 
 def is_premium(user_id):
-    return str(user_id) in load_premium_users()
+    users = load_premium_users()
+    return str(user_id) in users
 
 def extract_cc(text):
     pattern = r'(\d{15,16})\|(\d{2})\|(\d{2,4})\|(\d{3,4})'
@@ -216,10 +221,10 @@ async def start_cmd(event):
             "<b>⚡💠 𝐂𝐂 𝐂𝐨𝐦𝐦𝐚𝐧𝑑𝐬</b>\n"
             "<blockquote>• /cc card|mm|yy|cvv - Check single CC\n"
             "• /chk - Reply to .txt file to check cards</blockquote>\n"
-            "<b>⚡💠 𝐒𝐢𝐭𝐞 𝐂𝐨𝐦𝐦𝐚𝐧𝐝𝐬</b>\n"
+            "<b>⚡💠 𝐒𝐢𝐭𝐞 𝐂𝐨𝐦𝐦𝐚𝐧𝑑𝐬</b>\n"
             "<blockquote>• /site - Check all sites & remove dead\n"
             "• /rm url - Remove a specific site</blockquote>\n"
-            "<b>⚡💠 𝐏𝐫𝐨𝐱𝐲 𝐂𝐨𝐦𝐦𝐚𝐧𝐝𝐬</b>\n"
+            "<b>⚡💠 𝐏𝐫𝐨𝐱𝐲 𝐂𝐨𝐦𝐦𝐚𝐧𝑑𝐬</b>\n"
             "<blockquote>• /proxy - Check all proxies & remove dead\n"
             "• /addproxy [proxy] - Add proxies (inline or new lines)\n"
             "• /chkproxy proxy - Check single proxy\n"
@@ -487,5 +492,7 @@ async def chk_cmd(event):
     except:
         pass
 
+# Print loaded premium users on startup for verification in Railway logs
+print(f"✅ Loaded Premium Users: {load_premium_users()}")
 print("✅ Bot started successfully!")
 bot.run_until_disconnected()
